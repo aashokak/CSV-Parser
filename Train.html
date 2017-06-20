@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+	.csv-table{
+		margin-top: 15px;
+	}
+	.tab-header{
+		padding: 5px;
+		cursor: pointer;
+	}
+	.error-message{
+		margin-top: 10px;
+		color:red;
+	}
+</style>
+<meta charset="UTF-8">
+<title>Train Document</title>
+</head>
+
+<body>
+	<div>
+		<p>Select a csv file:</p> 
+		<input type="file" id="csvInput" onchange= "readFile(this.files)">
+		<div id = "csvTable" onclick= "createClickHandler(event)"></div>
+	</div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+<script src="train.js"></script>
+</html>
