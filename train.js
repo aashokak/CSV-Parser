@@ -1,12 +1,14 @@
 
 // An Object which is set to false assuming none of the column are initially sorted
-var ascSort = false;
+let ascSort = false;
 
 // An Object which is set to false assuming none of the column are initially sorted
-var descSort = false;
+let descSort = false;
 
 // JSON Object which will is initilaized to null
-var uniqueJSON = null;
+let uniqueJSON = null;
+
+const FILE_CANNOT_BE_PARSED_ERROR = ' cannot be parsed'
 
 /*
 	This function is called when user tries to upload csv file
@@ -15,7 +17,7 @@ var uniqueJSON = null;
 
 	@param - file - File the user uploads
 */
-var readFile = function(file){
+const readFile = function(file){
 	
 	$(document).ready(function() {
 	    $.ajax({
@@ -34,11 +36,11 @@ var readFile = function(file){
 	@param - file - File the user uploads
 */
 function displayErrorMessage(file){
-	var container = document.getElementById("csvTable");
+	let container = document.getElementById("csvTable");
 	//Emptying the container innerhtml
 	container.innerHTML = '';
-	var messageElem = document.createElement("div");
-	messageElem.innerHTML =  file + " cannot be parsed";
+	let messageElem = document.createElement("div");
+	messageElem.innerHTML =  file + FILE_CANNOT_BE_PARSED_ERROR;
 	if ($(messageElem).hasClass('error-message')){
 		$(messageElem).removeClass('error-message')
 	}
@@ -57,26 +59,27 @@ function displayErrorMessage(file){
 */
 function processData(data) {
 
-	var lines=data.split("\n");
+	let lines=data.split("\n");
 
-	var result = [];
+	let result = [];
 
-	var headers=lines[0].split(",");
+	let headers=lines[0].split(",");
 
-	for(var i=1;i<lines.length;i++){
+	lines.filter((line, idx) => {
+		if (idx > 0) {
+			let obj = {};
+			let currentline = line.split(',');
 
-		var obj = {};
-		var currentline=lines[i].split(",");
-
-		for(var j=0;j<headers.length;j++){
-			obj[headers[j].trim()] = currentline[j];
+			headers.forEach((header, idx) => {
+				obj[header.trim()] = currentline[idx];
+			});
+			if (obj.RUN_NUMBER.trim() !== '') {
+				result.push(obj);
+			}
 		}
-		if (obj.RUN_NUMBER.trim() !== ''){
-			result.push(obj);
-		}
-	}
+	});
 	//eliminates Duplicate JSON data
-	uniqueJSON = eliminateDuplicates(result);
+	uniqueJSON = result.length ? eliminateDuplicates(result) : [];
 
 	//Create the table and JSON data to the table
 	createTable(uniqueJSON);
@@ -92,15 +95,7 @@ function processData(data) {
 
 */
 function sortRunNumber(a, b) {
-	if(a.RUN_NUMBER < b.RUN_NUMBER){
-		return -1;
-	}
-	else if (a.RUN_NUMBER > b.RUN_NUMBER){
-		return 1;
-	}
-	else {
-		return 0;
-	}
+	return a.RUN_NUMBER < b.RUN_NUMBER ? -1 : 1
 }
 
 /*
@@ -111,13 +106,14 @@ function sortRunNumber(a, b) {
 	@param - array
 */
 function eliminateDuplicates(arr) {
-    arr.sort(sortRunNumber);
-    for(var i =1; i< arr.length; i++){
-    	if(arr[i].RUN_NUMBER.trim() && (arr[i].RUN_NUMBER === arr[i-1].RUN_NUMBER)){
-    		arr.splice(i,1);
-    	}
-    }
-    return arr;
+	if (arr.length) {
+		arr.sort(sortRunNumber);
+		return arr.filter((item, idx, array) => {
+			if (idx > 0) {
+				return array.indexOf(item.RUN_NUMBER) === idx;
+			}
+		});
+	}
 };
 
 /*
@@ -128,15 +124,7 @@ function eliminateDuplicates(arr) {
 */
 function sortColAsc(list, col){
 	list.sort(function (a, b) {
-		if(a[col] < b[col]){
-			return -1;
-		}
-		else if (a[col] > b[col]){
-			return 1;
-		}
-		else {
-			return 0;
-		}
+		return a[col] < b[col] ? -1 : 1;
     });
     createTable(list);
 }
@@ -147,17 +135,9 @@ function sortColAsc(list, col){
 	@param - JSON List
 	@param - column to be sorted
 */
-function sortRowDesc(list, row) {
+function sortColDesc(list, row) {
 	list.sort(function (a, b) {
-		if(a[row] < b[row]){
-			return 1;
-		}
-		else if (a[row] > b[row]){
-			return -1;
-		}
-		else {
-			return 0;
-		}
+		return a[row] < b[row] ? 1 : -1;
     });
     createTable(list);
 }
@@ -170,7 +150,7 @@ function createClickHandler(event) {
 	if(event.target.tagName === "TH") {
 		var clickedHeader = event.target.innerHTML;
 		if(ascSort) {
-			sortRowDesc(uniqueJSON, clickedHeader);
+			sortColDesc(uniqueJSON, clickedHeader);
 			descSort = true;
 			ascSort = false;
 		}
@@ -188,45 +168,47 @@ function createClickHandler(event) {
 
 */
 function createTable(json) {
-    var col = [];
-    for (var i = 0; i < json.length; i++) {
-        for (var key in json[i]) {
-            if (col.indexOf(key) === -1) {
-                    col.push(key);
-            }
-        }
+    if (json.length) {
+    	let col = [];
+    	json.forEach((data) => {
+	    	for (let key in data) {
+	            if (col.indexOf(key) === -1) {
+	                    col.push(key);
+	            }
+	        }
+	    });
+
+	    let table = document.createElement("table");
+
+	    //Table Row
+	    let tr = table.insertRow(-1);
+	    col.forEach((cItem) => {
+	    	let th= document.createElement("th");
+	    	th.innerHTML = cItem;
+	        tr.appendChild(th);
+	    });
+
+	    // Add json data to the table as rows.
+	    json.forEach((data) => {
+	    	tr = table.insertRow(-1);
+	    	col.forEach((cItem) => {
+	    		let tabCell = tr.insertCell(-1);
+	            tabCell.innerHTML = data[cItem];
+	    	});
+	    });
+
+	    //Creating a container and append the table to its child
+	    let divContainer = document.getElementById("csvTable");
+	    divContainer.innerHTML = "";
+	    divContainer.appendChild(table);
+
+	    //dynamically  adding styles to the element
+	    $('table').addClass('csv-table');
+	    $('table tr th').addClass('tab-header');
+	    $('table.csv-table').attr('border', '2');
     }
-
-    var table = document.createElement("table");
-
-    //Table Row
-    var tr = table.insertRow(-1);
-
-    for (var i = 0; i < col.length; i++) {
-    	//Table Header
-        var th = document.createElement("th");
-        th.innerHTML = col[i];
-        tr.appendChild(th);
+    else {
+    	let  = document.createElement("div");
+		messageElem.innerHTML =  file + FILE_CANNOT_BE_PARSED_ERROR;
     }
-
-    // Add json data to the table as rows.
-    for (var i = 0; i < json.length; i++) {
-
-        tr = table.insertRow(-1);
-
-        for (var j = 0; j < col.length; j++) {
-            var tabCell = tr.insertCell(-1);
-            tabCell.innerHTML = json[i][col[j]];
-        }
-    }
-
-    //Creating a container and append the table to its child
-    var divContainer = document.getElementById("csvTable");
-    divContainer.innerHTML = "";
-    divContainer.appendChild(table);
-
-    //dynamically  adding styles to the element
-    $('table').addClass('csv-table');
-    $('table tr th').addClass('tab-header');
-    $('table.csv-table').attr('border', '2');
  };
