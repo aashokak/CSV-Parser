@@ -10,6 +10,8 @@ let uniqueJSON = null;
 
 const FILE_CANNOT_BE_PARSED_ERROR = ' cannot be parsed'
 
+const ERROR_IN_PROCESSING_CSV = 'Error in processing the CSV file';
+
 /*
 	This function is called when user tries to upload csv file
 	accepts file as an argument and on success process Data 
@@ -108,11 +110,12 @@ function sortRunNumber(a, b) {
 function eliminateDuplicates(arr) {
 	if (arr.length) {
 		arr.sort(sortRunNumber);
-		return arr.filter((item, idx, array) => {
+		arr.filter((item, idx, array) => {
 			if (idx > 0) {
 				return array.indexOf(item.RUN_NUMBER) === idx;
 			}
 		});
+		return arr;
 	}
 };
 
@@ -208,7 +211,6 @@ function createTable(json) {
 	    $('table.csv-table').attr('border', '2');
     }
     else {
-    	let  = document.createElement("div");
-		messageElem.innerHTML =  file + FILE_CANNOT_BE_PARSED_ERROR;
+    	alert(ERROR_IN_PROCESSING_CSV);
     }
  };
